@@ -28,7 +28,8 @@
   "identifier": "dev.kenya.quantframe",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3NEIwMTI1MzA3Q0E1OEYKUldTUHBYd3dKUUZMMTczQ2pIYTR0bklLQXlaMkxvK0V0a0RMQytNMTdqZzBCWitQRnNIWDhxYnAK",
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE3N0MzMUJBMzNBRjdGNjQKUldSa2Y2OHp1akY4cDY0Qi9QYzFiVEZTZGY0ejZsYUR2VFI4aTZrRDA1Q3dKV3VEVW44V1hLLy8K",
       "endpoints": [
         "https://api.quantframe.app/release/{{target}}/{{arch}}/{{current_version}}"
       ]
