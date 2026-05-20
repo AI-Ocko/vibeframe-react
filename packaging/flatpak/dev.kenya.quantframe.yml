@@ -16,6 +16,9 @@ finish-args:
   - --device=dri
   - --filesystem=xdg-download
   - --filesystem=xdg-documents
+  # Read-only access to Warframe's EE.log under Steam Proton (native + Flatpak Steam)
+  - --filesystem=~/.local/share/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe:ro
+  - --filesystem=~/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe:ro
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.freedesktop.secrets
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1

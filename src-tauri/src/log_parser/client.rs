@@ -30,9 +30,32 @@ impl LogParserState {
         this
     }
     pub fn get_default_path() -> PathBuf {
-        helper::get_local_data_path()
-            .join("Warframe")
-            .join("EE.log")
+        #[cfg(target_os = "linux")]
+        {
+            // Warframe runs under Steam Proton on Linux. Try the native Steam
+            // install first, then the Flatpak Steam install. If neither exists
+            // yet (Warframe not run yet), fall back to the native path so the
+            // watcher picks it up once it appears.
+            const PROTON_SUFFIX: &str = "steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe/EE.log";
+            let home = helper::get_home_path();
+            let native = home.join(".local/share/Steam").join(PROTON_SUFFIX);
+            let flatpak = home
+                .join(".var/app/com.valvesoftware.Steam/data/Steam")
+                .join(PROTON_SUFFIX);
+            if native.exists() {
+                return native;
+            }
+            if flatpak.exists() {
+                return flatpak;
+            }
+            return native;
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            helper::get_local_data_path()
+                .join("Warframe")
+                .join("EE.log")
+        }
     }
     fn start(this: Arc<Self>) {
         thread::spawn(move || match this.watcher.watch() {
