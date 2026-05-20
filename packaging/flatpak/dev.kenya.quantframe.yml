@@ -1,0 +1,63 @@
+app-id: dev.kenya.quantframe
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22
+command: Quantframe
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=xdg-download
+  - --filesystem=xdg-documents
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.secrets
+  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
+  build-args:
+    - --share=network
+  env:
+    CARGO_HOME: /run/build/quantframe/cargo
+    RUSTFLAGS: -C link-arg=-Wl,--no-as-needed
+
+modules:
+  - name: quantframe
+    buildsystem: simple
+    build-commands:
+      # Set up a local prefix to install pnpm without needing system access
+      - mkdir -p .pnpm-prefix
+      - npm install --prefix .pnpm-prefix --no-audit --no-fund -g pnpm@9
+      - export PATH="$PWD/.pnpm-prefix/bin:$PATH"
+      # Install JS dependencies and build the frontend + Tauri bundle (release)
+      - export PATH="$PWD/.pnpm-prefix/bin:$PATH" && pnpm install --no-frozen-lockfile
+      - export PATH="$PWD/.pnpm-prefix/bin:$PATH" && pnpm exec tauri build --no-bundle
+      # Install the compiled binary
+      - install -Dm755 src-tauri/target/release/Quantframe /app/bin/Quantframe
+      # Install icons at the standard hicolor sizes available in the repo
+      - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/dev.kenya.quantframe.png
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/dev.kenya.quantframe.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/dev.kenya.quantframe.png
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/dev.kenya.quantframe.png
+      # Install desktop entry and AppStream metainfo
+      - install -Dm644 packaging/flatpak/dev.kenya.quantframe.desktop /app/share/applications/dev.kenya.quantframe.desktop
+      - install -Dm644 packaging/flatpak/dev.kenya.quantframe.metainfo.xml /app/share/metainfo/dev.kenya.quantframe.metainfo.xml
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .flatpak-builder
+          - .git
+          - build
+          - dist
+          - node_modules
+          - src-tauri/target
+          - .pnpm-store
