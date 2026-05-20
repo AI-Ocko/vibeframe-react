@@ -32,3 +32,7 @@ __trace/
 
 build/
 .pnpm-store
+
+# Flatpak build artifacts
+.flatpak-builder/
+flatpak-build/

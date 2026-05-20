@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Quantframe
+GenericName=Warframe Market Trading Assistant
+Comment=Algorithmic trading assistant for warframe.market
+Exec=Quantframe
+Icon=dev.kenya.quantframe
+Terminal=false
+Categories=Game;Utility;
+StartupNotify=true
+StartupWMClass=Quantframe

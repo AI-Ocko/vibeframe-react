@@ -76,6 +76,81 @@ pnpm run tauri build
 
 > For developers, you can also use yarn or pnpm if you prefer. (pnpm is the fastest package manager)
 
+## Run via Flatpak (Linux)
+
+Quantframe ships a Flatpak manifest under `packaging/flatpak/` so it can be
+built and installed as a sandboxed Linux desktop app.
+
+### Prerequisites
+
+Install `flatpak` and `flatpak-builder` using your distribution's package
+manager, then make sure the Flathub remote is configured and the required
+runtime and SDK extensions are installed:
+
+```bash
+# One-time setup: add Flathub if you don't have it yet
+flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+
+# Runtime, SDK, and the toolchain extensions referenced by the manifest
+flatpak install --user flathub \
+  org.gnome.Platform//49 \
+  org.gnome.Sdk//49 \
+  org.freedesktop.Sdk.Extension.rust-stable//25.08 \
+  org.freedesktop.Sdk.Extension.node22//25.08
+```
+
+> The GNOME runtime is required because it bundles `webkit2gtk-4.1`, which
+> Tauri's webview layer depends on. The plain `org.freedesktop.Platform`
+> runtime does **not** include WebKit2GTK.
+
+### Build
+
+From the repository root:
+
+```bash
+flatpak-builder --user --force-clean --install \
+  flatpak-build packaging/flatpak/dev.kenya.quantframe.yml
+```
+
+What this does:
+
+- `flatpak-build/` is a scratch directory used while assembling the app.
+- `--install` installs the resulting Flatpak into your user-scope
+  installation when the build succeeds.
+- `.flatpak-builder/` is created alongside the manifest and caches sources
+  between builds — keep it around to speed up rebuilds.
+
+The first build downloads the full Tauri Rust dependency graph and the
+Node modules and can take 15–30 minutes on a typical machine. Subsequent
+builds re-use the cache and are much faster.
+
+### Run
+
+```bash
+flatpak run dev.kenya.quantframe
+```
+
+Or launch **Quantframe** from your desktop application menu.
+
+### Uninstall
+
+```bash
+flatpak uninstall --user dev.kenya.quantframe
+```
+
+### Notes
+
+- The build allows network access inside the sandbox so `pnpm` and
+  `cargo` can fetch dependencies. This is fine for personal use and
+  local distribution, but a Flathub submission would require fully
+  pre-vendored sources.
+- The bundled binary is a **release** build, not the `--debug` build
+  produced by `pnpm run tauri:build`.
+- On NVIDIA proprietary drivers, the manifest sets
+  `WEBKIT_DISABLE_DMABUF_RENDERER=1` and
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1` to work around known WebKitGTK
+  rendering issues that can cause a blank window.
+
 ## About the project
 
 This project uses:

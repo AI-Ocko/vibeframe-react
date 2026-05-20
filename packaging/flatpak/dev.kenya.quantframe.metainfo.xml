@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.kenya.quantframe</id>
+  <name>Quantframe</name>
+  <summary>Algorithmic trading assistant for warframe.market</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <description>
+    <p>
+      Quantframe is a re-implementation of Warframe-Algo-Trader using Tauri.
+      It provides an algorithmic trading assistant that communicates with
+      warframe.market to help players price and trade items more effectively.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Live price monitoring through the warframe.market API</li>
+      <li>Local SQLite database for transaction history</li>
+      <li>Lightweight desktop UI built with React and Mantine</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">dev.kenya.quantframe.desktop</launchable>
+
+  <url type="homepage">https://github.com/Kenya-DK/quantframe-react</url>
+  <url type="bugtracker">https://github.com/Kenya-DK/quantframe-react/issues</url>
+
+  <developer id="dev.kenya">
+    <name>Kenya-DK</name>
+  </developer>
+
+  <content_rating type="oars-1.1" />
+
+  <categories>
+    <category>Game</category>
+    <category>Utility</category>
+  </categories>
+
+  <releases>
+    <release version="1.6.20" date="2026-05-19">
+      <description>
+        <p>Flatpak packaging added.</p>
+      </description>
+    </release>
+  </releases>
+</component>
