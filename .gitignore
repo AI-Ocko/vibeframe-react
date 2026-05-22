@@ -36,3 +36,4 @@ build/
 # Flatpak build artifacts
 .flatpak-builder/
 flatpak-build/
+repo
