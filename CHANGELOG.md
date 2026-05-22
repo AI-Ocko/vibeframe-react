@@ -2,6 +2,46 @@
 
 All notable packaging and distribution changes are documented in this file.
 
+## [Unreleased] - 2026-05-20
+
+### Fixed — Warframe `EE.log` discovery on Linux / Flatpak
+
+The log parser previously resolved its default path via Tauri's
+`local_data_dir()` joined with `Warframe/EE.log`. On Linux this expands
+to `~/.local/share/Warframe/EE.log`, which does not exist — Warframe
+runs under Steam Proton and writes its log inside the Proton prefix.
+Under Flatpak the parser logged
+`File not found: /home/.../dev.kenya.quantframe/data/Warframe/EE.log`
+and never picked up trade events.
+
+- **`src-tauri/src/log_parser/client.rs`** — `LogParserState::get_default_path`
+  is now platform-aware. On Linux it resolves to the Steam Proton prefix
+  for Warframe (Steam app id `230410`), checking the native Steam install
+  at `~/.local/share/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe/EE.log`
+  first, then the Flatpak Steam install at
+  `~/.var/app/com.valvesoftware.Steam/data/Steam/...`. If neither file
+  exists yet (Warframe never launched), it falls back to the native path
+  so the file watcher picks it up on first appearance. Windows behavior
+  is unchanged (`local_data_dir/Warframe/EE.log`).
+- **`src-tauri/src/helper.rs`** — added `get_home_path()` helper
+  (mirrors the existing `get_local_data_path()` pattern) so the log
+  parser can resolve `$HOME` without pulling in `tauri::Manager`
+  directly.
+- **`packaging/flatpak/dev.kenya.quantframe.yml`** — added two
+  narrowly-scoped read-only `--filesystem=` permissions to `finish-args`
+  so the sandbox can actually read `EE.log` from either Steam install
+  location:
+  - `~/.local/share/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe:ro`
+  - `~/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe:ro`
+
+  These are scoped to the Warframe directory specifically (not the whole
+  Steam tree) and are read-only since the parser only watches the file.
+  Users who override the path via the `wf_log_path` advanced setting will
+  still need their chosen location to fall under an existing whitelisted
+  path (e.g. `xdg-download` / `xdg-documents`).
+
+A rebuild of the Flatpak is required to pick up the new finish-args.
+
 ## [Unreleased] - 2026-05-19
 
 ### Added — Flatpak packaging

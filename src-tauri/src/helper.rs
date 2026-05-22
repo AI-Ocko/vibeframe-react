@@ -136,6 +136,16 @@ pub fn get_local_data_path() -> PathBuf {
     local_path
 }
 
+pub fn get_home_path() -> PathBuf {
+    let app = APP.get().unwrap();
+    match app.path().home_dir() {
+        Ok(val) => val,
+        Err(_) => {
+            panic!("Could not find home directory");
+        }
+    }
+}
+
 pub fn get_or_create_window(
     label: &str,
     url: &str,
