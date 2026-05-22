@@ -1,0 +1,23 @@
+FROM archlinux:latest
+
+# Refresh keyring + base, then install flatpak and minimal runtime deps.
+# fuse2 + dbus are required for bwrap/portals; ca-certificates for flathub TLS.
+RUN pacman -Sy --noconfirm archlinux-keyring && \
+    pacman -Syu --noconfirm \
+        flatpak \
+        git \
+        ca-certificates \
+        dbus \
+        fuse2 \
+        xdg-utils \
+        xorg-server-xvfb && \
+    pacman -Scc --noconfirm
+
+# Add flathub at the system level and pre-install the GNOME 49 runtime that the
+# Quantframe bundle depends on. SDK + SDK extensions are build-only, so they're
+# intentionally omitted to keep the image small and to verify the bundle only
+# needs the runtime at install/launch time.
+RUN flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo && \
+    flatpak install -y --noninteractive flathub org.gnome.Platform//49
+
+WORKDIR /test

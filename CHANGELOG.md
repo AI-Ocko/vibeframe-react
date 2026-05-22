@@ -2,6 +2,100 @@
 
 All notable packaging and distribution changes are documented in this file.
 
+## [Unreleased] - 2026-05-21
+
+### Added — Ubuntu Flatpak build + install test in Docker
+
+Added a companion to the Arch test that exercises the *build* path on
+Ubuntu: it runs `flatpak-builder` against the manifest, bundles the
+result, installs that bundle, and launches it — all inside one
+container. The Arch test covers "does the bundle install on a minimal
+runtime"; this one covers "can a clean Ubuntu environment build the
+Flatpak from source and run it".
+
+- **`docker/Dockerfile.ubuntu-flatpak`** — extended the existing image
+  with `ca-certificates`, `xvfb`, and explicit apt cleanup, plus a
+  `WORKDIR /app`. The base packages (`flatpak`, `flatpak-builder`,
+  GNOME 49 SDK + rust-stable/node22 SDK extensions) were already
+  installed.
+- **`docker/test-ubuntu-flatpak.sh`** — `--privileged` container that
+  mounts the project read-write (so `.flatpak-builder/` and
+  `src-tauri/target/` cache across runs), then:
+  1. `flatpak-builder --repo=flatpak-build/repo-ubuntu build-dir-ubuntu …`
+  2. `flatpak build-bundle … Quantframe-ubuntu-test.flatpak`
+  3. `flatpak install` of the freshly built bundle
+  4. starts the system D-Bus daemon, then runs `ldd` inside the
+     sandbox to check for missing libraries
+  5. launches the app under `dbus-run-session` + `xvfb-run` with a
+     12-second budget and greps the log for `panic|segfault|undefined
+     symbol|cannot open shared`
+  Pass `FRESH=1` to wipe the builder cache before building.
+
+D-Bus notes:
+
+- `flatpak run` (system installs) needs both a system bus and a session
+  bus. Started the system daemon with `dbus-daemon --system --fork`,
+  and used `dbus-run-session` to provide the session bus per-invocation.
+  Without this the run fails with `error: Could not connect: No such
+  file or directory`.
+
+Test results:
+
+- `flatpak-builder` completed cleanly inside the container, AppStream
+  compose succeeded, both `dev.kenya.quantframe` and
+  `dev.kenya.quantframe.Debug` were committed to the local repo.
+- Bundle install succeeded; `flatpak info` returned the expected ref
+  and runtime (`org.gnome.Platform/x86_64/49`).
+- `ldd /app/bin/Quantframe` inside the sandbox: no missing libs.
+- App launched under xvfb, reached its main loop (DB migrations
+  applied, file watcher running), exited via the 12-second timeout.
+  No panics, no missing symbols. Same benign warnings as the Arch
+  test (empty tokens, no `EE.log`, no GPU/DRI3).
+
+Run the test with: `./docker/test-ubuntu-flatpak.sh`
+
+## [Unreleased] - 2026-05-21
+
+### Added — Arch Linux Flatpak install test in Docker
+
+Added a Docker-based smoke test that verifies the Flatpak bundle installs
+and launches cleanly on a fresh Arch Linux system with only the GNOME 49
+runtime preinstalled. This complements the existing Ubuntu/Fedora native
+build containers by exercising the Flatpak distribution path on a third
+distro, and provides a reproducible way to catch missing runtime deps
+before publishing a bundle.
+
+- **`docker/Dockerfile.arch-flatpak`** — `archlinux:latest` base with
+  `flatpak`, `git`, `ca-certificates`, `dbus`, `fuse2`, `xdg-utils`, and
+  `xorg-server-xvfb` installed. Pre-pulls the `flathub` remote and
+  `org.gnome.Platform//49` (plus its GL / VAAPI / codecs / locale
+  sub-runtimes). The SDK and SDK extensions are intentionally omitted —
+  those are build-only, and excluding them verifies that the bundle's
+  declared runtime is genuinely self-sufficient at install/launch time.
+- **`docker/test-arch-flatpak.sh`** — mirrors `build-ubuntu.sh` /
+  `build-fedora.sh`. Builds the image, mounts the bundle at
+  `flatpak-build/Quantframe-x86_64-test.flatpak` (overridable via
+  `BUNDLE_PATH`) into the container read-only, then runs
+  `flatpak install` + `flatpak info` + an `ldd` sanity check on the
+  installed `/app/bin/Quantframe`. Uses `--privileged` because bwrap
+  needs nested user namespaces inside Docker.
+
+Test results on the bundle built from the current manifest:
+
+- Install: `flatpak install` succeeded, `flatpak info` returned the
+  expected ref, `ldd` resolved every library against the GNOME 49
+  sandbox (no missing symbols).
+- Launch: under `xvfb-run` with a 15-second timeout, the app reached
+  its main loop — DB backup created, migrations applied, file watcher
+  started polling for `EE.log`. No panics, no crashes, no missing
+  libraries. Expected non-blocking warnings only: empty user tokens
+  (no saved credentials in the fresh container), `EE.log not found`
+  (Warframe not installed), `IBUS-WARNING` about a missing
+  `/var/lib/dbus/machine-id`, and a `libEGL DRI3` warning (no GPU
+  passthrough). None of these indicate packaging issues.
+
+Run the test with: `./docker/test-arch-flatpak.sh`
+
 ## [Unreleased] - 2026-05-20
 
 ### Fixed — Warframe `EE.log` discovery on Linux / Flatpak
